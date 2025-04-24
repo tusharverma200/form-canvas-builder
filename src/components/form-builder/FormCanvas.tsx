@@ -9,10 +9,14 @@ import { toast } from 'sonner';
 import { Share } from 'lucide-react';
 import { createClient } from '@supabase/supabase-js';
 
-const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_ANON_KEY
-);
+// Get Supabase credentials from environment variables
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+// Initialize Supabase client conditionally
+const supabase = (supabaseUrl && supabaseKey) 
+  ? createClient(supabaseUrl, supabaseKey)
+  : null;
 
 const FormCanvas: React.FC = () => {
   const { form, mode } = useFormBuilder();
@@ -21,6 +25,13 @@ const FormCanvas: React.FC = () => {
     e.preventDefault();
     
     if (mode === 'preview') {
+      // Check if Supabase is properly initialized
+      if (!supabase) {
+        toast.error('Database connection not available');
+        console.error('Supabase client not initialized. Check your environment variables.');
+        return;
+      }
+
       const formData = new FormData(e.target as HTMLFormElement);
       const responses: Record<string, any> = {};
       
@@ -46,6 +57,13 @@ const FormCanvas: React.FC = () => {
   };
 
   const handleShare = async () => {
+    // Check if Supabase is properly initialized
+    if (!supabase) {
+      toast.error('Sharing not available');
+      console.error('Supabase client not initialized. Check your environment variables.');
+      return;
+    }
+
     try {
       const { data, error } = await supabase
         .from('form_shares')
