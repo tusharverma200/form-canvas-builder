@@ -1,4 +1,3 @@
-
 export type FieldType = 
   | 'text'
   | 'textarea'
@@ -38,6 +37,20 @@ export type FormField = {
   validation?: ValidationRule[];
   className?: string;
   style?: React.CSSProperties;
+};
+
+export type FormResponse = {
+  id: string;
+  formId: string;
+  responses: Record<string, any>;
+  createdAt: string;
+};
+
+export type FormShare = {
+  id: string;
+  formId: string;
+  createdAt: string;
+  expiresAt?: string;
 };
 
 export type FormData = {

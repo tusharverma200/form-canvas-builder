@@ -6,16 +6,63 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { Share } from 'lucide-react';
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(
+  import.meta.env.VITE_SUPABASE_URL,
+  import.meta.env.VITE_SUPABASE_ANON_KEY
+);
 
 const FormCanvas: React.FC = () => {
   const { form, mode } = useFormBuilder();
   
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // In a real application, you would validate and submit the form data
     if (mode === 'preview') {
-      toast.success('Form submitted successfully!');
+      const formData = new FormData(e.target as HTMLFormElement);
+      const responses: Record<string, any> = {};
+      
+      form.fields.forEach(field => {
+        responses[field.id] = formData.get(field.id);
+      });
+
+      try {
+        const { error } = await supabase
+          .from('form_responses')
+          .insert([{
+            formId: form.id,
+            responses
+          }]);
+
+        if (error) throw error;
+        toast.success('Form submitted successfully!');
+      } catch (error) {
+        toast.error('Error submitting form');
+        console.error('Error:', error);
+      }
+    }
+  };
+
+  const handleShare = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('form_shares')
+        .insert([{
+          formId: form.id,
+        }])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      const shareUrl = `${window.location.origin}/form/${data.id}`;
+      await navigator.clipboard.writeText(shareUrl);
+      toast.success('Share link copied to clipboard!');
+    } catch (error) {
+      toast.error('Error generating share link');
+      console.error('Error:', error);
     }
   };
 
@@ -39,10 +86,22 @@ const FormCanvas: React.FC = () => {
   return (
     <div className="form-builder-canvas" style={formStyle}>
       <form onSubmit={handleSubmit}>
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold mb-2">{form.title}</h1>
-          {form.description && (
-            <p className="text-muted-foreground">{form.description}</p>
+        <div className="mb-6 flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold mb-2">{form.title}</h1>
+            {form.description && (
+              <p className="text-muted-foreground">{form.description}</p>
+            )}
+          </div>
+          {mode === 'edit' && (
+            <Button
+              variant="outline"
+              onClick={handleShare}
+              className="flex items-center gap-2"
+            >
+              <Share className="h-4 w-4" />
+              Share Form
+            </Button>
           )}
         </div>
 
